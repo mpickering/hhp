@@ -48,6 +48,7 @@ Library
   Exposed-Modules:      Hhp
                         Hhp.Ghc
                         Hhp.Internal
+                        Hhp.HIE
   Other-Modules:        Hhp.Boot
                         Hhp.Browse
                         Hhp.CabalApi

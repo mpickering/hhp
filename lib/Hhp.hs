@@ -28,6 +28,7 @@ module Hhp (
   , rootInfo
   , packageDoc
   , findSymbol
+  , module Hhp.HIE
   ) where
 
 import Hhp.Boot
@@ -43,3 +44,4 @@ import Hhp.Lint
 import Hhp.List
 import Hhp.PkgDoc
 import Hhp.Types
+import Hhp.HIE

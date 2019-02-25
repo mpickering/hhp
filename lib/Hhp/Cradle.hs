@@ -22,7 +22,21 @@ import Hhp.GhcPkg
 findCradle :: IO Cradle
 findCradle = do
     wdir <- getCurrentDirectory
-    cabalCradle wdir <|> sandboxCradle wdir <|> plainCradle wdir
+    hhpFile wdir <|> cabalCradle wdir <|> sandboxCradle wdir <|> plainCradle wdir
+
+-- | Find a cradle by finding an executable `hhp-opts` file.
+hhpFile :: FilePath -> IO Cradle
+hhpFile wdir = do
+--  (rdir,cfile) <- cabalDir wdir
+--  pkgDbStack <- getPackageDbStack rdir
+  print "Using opts"
+  return Cradle {
+      cradleCurrentDir = wdir
+    , cradleRootDir    = wdir
+    , cradleCabalFile  = Nothing
+    , cradleOptsProg   = Just "/home/matt/hhp/opts"
+    , cradlePkgDbStack = []
+  }
 
 cabalCradle :: FilePath -> IO Cradle
 cabalCradle wdir = do
@@ -32,6 +46,7 @@ cabalCradle wdir = do
         cradleCurrentDir = wdir
       , cradleRootDir    = rdir
       , cradleCabalFile  = Just cfile
+      , cradleOptsProg   = Nothing
       , cradlePkgDbStack = pkgDbStack
       }
 
@@ -43,6 +58,7 @@ sandboxCradle wdir = do
         cradleCurrentDir = wdir
       , cradleRootDir    = rdir
       , cradleCabalFile  = Nothing
+      , cradleOptsProg   = Nothing
       , cradlePkgDbStack = pkgDbStack
       }
 
@@ -51,6 +67,7 @@ plainCradle wdir = return Cradle {
         cradleCurrentDir = wdir
       , cradleRootDir    = wdir
       , cradleCabalFile  = Nothing
+      , cradleOptsProg   = Nothing
       , cradlePkgDbStack = [GlobalDb]
       }
 

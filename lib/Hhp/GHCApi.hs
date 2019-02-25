@@ -18,6 +18,8 @@ import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages), gop
 import Exception (ghandle, SomeException(..))
 import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
 import qualified GHC as G
+import qualified Outputable as G
+import qualified CmdLineParser as G
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
@@ -76,11 +78,13 @@ initializeFlagsWithCradle ::
         -> Cradle
         -> Ghc ()
 initializeFlagsWithCradle opt cradle
+  | raw       = withOptsFile
   | cabal     = withCabal <|> withSandbox
   | otherwise = withSandbox
   where
     mCradleFile = cradleCabalFile cradle
     cabal = isJust mCradleFile
+    raw   = isJust (cradleOptsProg cradle)
     ghcopts = ghcOpts opt
     withCabal = do
         pkgDesc <- liftIO $ parseCabalFile $ fromJust mCradleFile
@@ -94,6 +98,13 @@ initializeFlagsWithCradle opt cradle
           | otherwise    = CompilerOptions (ghcopts ++ pkgOpts) [wdir,rdir] []
         wdir = cradleCurrentDir cradle
         rdir = cradleRootDir    cradle
+    withOptsFile = do
+      ghcOpts <- liftIO $ readProcess (fromJust $ cradleOptsProg cradle) [] []
+      let ghcOpts' = words ghcOpts
+          compOpts = CompilerOptions ghcOpts' [] []
+      liftIO $ print ghcOpts'
+      initSession SingleFile opt compOpts
+
 
 ----------------------------------------------------------------
 
@@ -144,8 +155,21 @@ setHideAllPackages _ df        = df
 
 -- | Parse command line ghc options and add them to the 'DynFlags' passed
 addCmdOpts :: [GHCOption] -> DynFlags -> Ghc DynFlags
-addCmdOpts cmdOpts df =
-    tfst <$> G.parseDynamicFlags df (map G.noLoc cmdOpts)
+addCmdOpts cmdOpts df1 = do
+    (df2, leftovers, warns) <- G.parseDynamicFlags df1 (map G.noLoc cmdOpts)
+    -- TODO: Need to handle these as well
+    -- Ideally it requires refactoring to work in GHCi monad rather than
+    -- Ghc monad and then can just use newDynFlags.
+    {-
+    liftIO $ G.handleFlagWarnings idflags1 warns
+    when (not $ null leftovers)
+        (throwGhcException . CmdLineError
+         $ "Some flags have not been recognized: "
+         ++ (concat . intersperse ", " $ map unLoc leftovers))
+    when (interactive_only && packageFlagsChanged idflags1 idflags0) $ do
+       liftIO $ hPutStrLn stderr "cannot set package flags with :seti; use :set"
+    -}
+    return df2
   where
     tfst (a,_,_) = a
 

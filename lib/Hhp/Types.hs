@@ -146,6 +146,8 @@ data Cradle = Cradle {
   , cradleRootDir    :: FilePath
   -- | The file name of the found cabal file.
   , cradleCabalFile  :: Maybe FilePath
+  -- | The filepath to the executable used to get the options
+  , cradleOptsProg   :: Maybe FilePath
   -- | Package database stack
   , cradlePkgDbStack  :: [GhcPkgDb]
   } deriving (Eq, Show)
