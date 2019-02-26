@@ -14,24 +14,19 @@ module Hhp.GHCApi (
   ) where
 
 import CoreMonad (liftIO)
-import DynFlags (GeneralFlag(Opt_BuildingCabalPackage, Opt_HideAllPackages), gopt_set, ModRenaming(..), PackageFlag(ExposePackage), PackageArg(..))
 import Exception (ghandle, SomeException(..))
 import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
 import qualified GHC as G
 import qualified Outputable as G
-import qualified CmdLineParser as G
 
-import Control.Applicative ((<|>))
 import Control.Monad (forM, void)
-import Data.Maybe (isJust, fromJust)
 import System.Exit (exitSuccess)
 import System.IO (hPutStr, hPrint, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcess)
+import System.Directory
 
-import Hhp.CabalApi
 import qualified Hhp.Gap as Gap
-import Hhp.GhcPkg
 import Hhp.Types
 
 ----------------------------------------------------------------
@@ -65,9 +60,6 @@ withGHC' body = do
 
 ----------------------------------------------------------------
 
-importDirs :: [IncludeDir]
-importDirs = [".","..","../..","../../..","../../../..","../../../../.."]
-
 data Build = CabalPkg | SingleFile deriving Eq
 
 -- | Initialize the 'DynFlags' relating to the compilation of a single
@@ -77,32 +69,13 @@ initializeFlagsWithCradle ::
            Options
         -> Cradle
         -> Ghc ()
-initializeFlagsWithCradle opt cradle
-  | raw       = withOptsFile
-  | cabal     = withCabal <|> withSandbox
-  | otherwise = withSandbox
-  where
-    mCradleFile = cradleCabalFile cradle
-    cabal = isJust mCradleFile
-    raw   = isJust (cradleOptsProg cradle)
-    ghcopts = ghcOpts opt
-    withCabal = do
-        pkgDesc <- liftIO $ parseCabalFile $ fromJust mCradleFile
-        compOpts <- liftIO $ getCompilerOptions ghcopts cradle pkgDesc
-        initSession CabalPkg opt compOpts
-    withSandbox = initSession SingleFile opt compOpts
-      where
-        pkgOpts = ghcDbStackOpts $ cradlePkgDbStack cradle
-        compOpts
-          | null pkgOpts = CompilerOptions ghcopts importDirs []
-          | otherwise    = CompilerOptions (ghcopts ++ pkgOpts) [wdir,rdir] []
-        wdir = cradleCurrentDir cradle
-        rdir = cradleRootDir    cradle
-    withOptsFile = do
-      ghcOpts <- liftIO $ readProcess (fromJust $ cradleOptsProg cradle) [] []
-      let ghcOpts' = words ghcOpts
-          compOpts = CompilerOptions ghcOpts' [] []
-      liftIO $ print ghcOpts'
+initializeFlagsWithCradle opt cradle = do
+      liftIO $ print "withOptsFile"
+      dir <- liftIO $ getCurrentDirectory
+      (ex, ghcOpts, err) <- liftIO $ getOptions (cradleOptsProg cradle) (cradleRootDir cradle)
+      G.pprTraceM "res" (G.text (show (ex, err, ghcOpts, dir)))
+      let compOpts = CompilerOptions (words ghcOpts)
+      liftIO $ print ghcOpts
       initSession SingleFile opt compOpts
 
 
@@ -112,14 +85,11 @@ initSession :: Build
             -> Options
             -> CompilerOptions
             -> Ghc ()
-initSession build Options {..} CompilerOptions {..} = do
+initSession _build Options {..} CompilerOptions {..} = do
     df <- G.getSessionDynFlags
     void $ G.setSessionDynFlags =<< (addCmdOpts ghcOptions
       $ setLinkerOptions
-      $ setIncludeDirs includeDirs
-      $ setBuildEnv build
-      $ setEmptyLogger
-      $ addPackageFlags depPackages df)
+      $ setEmptyLogger df)
 
 setEmptyLogger :: DynFlags -> DynFlags
 setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ _ -> return () }
@@ -132,31 +102,12 @@ setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ _ -> return () }
 setLinkerOptions :: DynFlags -> DynFlags
 setLinkerOptions df = df {
     ghcLink   = LinkInMemory
-  , hscTarget = HscInterpreted
+  , hscTarget = HscNothing
   }
 
-setIncludeDirs :: [IncludeDir] -> DynFlags -> DynFlags
-setIncludeDirs idirs df = df { importPaths = idirs }
-
-setBuildEnv :: Build -> DynFlags -> DynFlags
-setBuildEnv build = setHideAllPackages build . setCabalPackage build
-
--- At the moment with this option set ghc only prints different error messages,
--- suggesting the user to add a hidden package to the build-depends in his cabal
--- file for example
-setCabalPackage :: Build -> DynFlags -> DynFlags
-setCabalPackage CabalPkg df = setCabalPkg df
-setCabalPackage _ df = df
-
--- | Enable hiding of all package not explicitly exposed (like Cabal does)
-setHideAllPackages :: Build -> DynFlags -> DynFlags
-setHideAllPackages CabalPkg df = gopt_set df Opt_HideAllPackages
-setHideAllPackages _ df        = df
-
--- | Parse command line ghc options and add them to the 'DynFlags' passed
-addCmdOpts :: [GHCOption] -> DynFlags -> Ghc DynFlags
+addCmdOpts :: [String] -> DynFlags -> Ghc DynFlags
 addCmdOpts cmdOpts df1 = do
-    (df2, leftovers, warns) <- G.parseDynamicFlags df1 (map G.noLoc cmdOpts)
+    (df2, _leftovers, _warns) <- G.parseDynamicFlags df1 (map G.noLoc cmdOpts)
     -- TODO: Need to handle these as well
     -- Ideally it requires refactoring to work in GHCi monad rather than
     -- Ghc monad and then can just use newDynFlags.
@@ -170,8 +121,6 @@ addCmdOpts cmdOpts df1 = do
        liftIO $ hPutStrLn stderr "cannot set package flags with :seti; use :set"
     -}
     return df2
-  where
-    tfst (a,_,_) = a
 
 ----------------------------------------------------------------
 
@@ -179,7 +128,7 @@ addCmdOpts cmdOpts df1 = do
 setTargetFiles :: [FilePath] -> Ghc ()
 setTargetFiles files = do
     targets <- forM files $ \file -> G.guessTarget file Nothing
-    G.setTargets targets
+    G.setTargets (map (\t -> t { G.targetAllowObjCode = False }) targets)
     void $ G.load LoadAllTargets
 
 ----------------------------------------------------------------
@@ -199,7 +148,7 @@ withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
         return dflag
     teardown = void . G.setSessionDynFlags
 
-withCmdFlags :: [GHCOption] -> Ghc a -> Ghc a
+withCmdFlags :: [String] -> Ghc a -> Ghc a
 withCmdFlags flags body = G.gbracket setup teardown (\_ -> body)
   where
     setup = do
@@ -226,15 +175,3 @@ allWarningFlags = unsafePerformIO $ do
         df <- G.getSessionDynFlags
         df' <- addCmdOpts ["-Wall"] df
         return $ G.warningFlags df'
-
-setCabalPkg :: DynFlags -> DynFlags
-setCabalPkg dflag = gopt_set dflag Opt_BuildingCabalPackage
-
-addPackageFlags :: [Package] -> DynFlags -> DynFlags
-addPackageFlags pkgs df =
-    df { packageFlags = packageFlags df ++ expose `map` pkgs }
-  where
-    expose pkg = ExposePackage pkgid (PackageArg name) (ModRenaming True [])
-      where
-        (name,_,_) = pkg
-        pkgid = showPkgId pkg

@@ -1,7 +1,6 @@
 module Hhp.Flag where
 
 import DynFlags
-
 import Hhp.Types
 
 -- | Listing GHC flags. (e.g -Wno-orphans)

@@ -8,25 +8,9 @@ module Hhp.Ghc (
   -- * Initializing DynFlags
   , initializeFlagsWithCradle
   -- * Ghc utilities
-  , boot
-  , browse
-  , check
-  , info
-  , types
-  , modules
-  -- * SymMdlDb
-  , Symbol
-  , SymMdlDb
-  , getSymMdlDb
-  , lookupSym
   -- * Misc
   , getSystemLibDir
   ) where
 
-import Hhp.Boot
-import Hhp.Browse
 import Hhp.Check
-import Hhp.Find
 import Hhp.GHCApi
-import Hhp.Info
-import Hhp.List

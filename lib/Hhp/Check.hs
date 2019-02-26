@@ -11,6 +11,7 @@ import GHC (Ghc, DynFlags(..))
 import Hhp.GHCApi
 import Hhp.Logger
 import Hhp.Types
+import Outputable
 
 ----------------------------------------------------------------
 
@@ -22,6 +23,7 @@ checkSyntax :: Options
             -> IO String
 checkSyntax _   _      []    = return ""
 checkSyntax opt cradle files = withGHC sessionName $ do
+    pprTraceM "cradble" (text $ show cradle)
     initializeFlagsWithCradle opt cradle
     either id id <$> check opt files
   where

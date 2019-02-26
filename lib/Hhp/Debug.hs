@@ -2,11 +2,8 @@ module Hhp.Debug (debugInfo, rootInfo) where
 
 import CoreMonad (liftIO)
 
-import Control.Applicative ((<|>))
-import Data.List (intercalate)
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.Maybe (fromMaybe)
 
-import Hhp.CabalApi
 import Hhp.GHCApi
 import Hhp.Types
 
@@ -17,34 +14,17 @@ debugInfo :: Options
           -> Cradle
           -> IO String
 debugInfo opt cradle = convert opt <$> do
-    CompilerOptions gopts incDir pkgs <-
-        if cabal then
-            liftIO (fromCabalFile <|> return simpleCompilerOption)
-          else
-            return simpleCompilerOption
+    (_ex, _sterr, gopts) <- getOptions (cradleOptsProg cradle) (cradleRootDir cradle)
     mglibdir <- liftIO getSystemLibDir
     return [
         "Root directory:      " ++ rootDir
       , "Current directory:   " ++ currentDir
-      , "Cabal file:          " ++ cabalFile
       , "GHC options:         " ++ unwords gopts
-      , "Include directories: " ++ unwords incDir
-      , "Dependent packages:  " ++ intercalate ", " (map showPkg pkgs)
       , "System libraries:    " ++ fromMaybe "" mglibdir
       ]
   where
     currentDir = cradleCurrentDir cradle
-    mCabalFile = cradleCabalFile cradle
     rootDir    = cradleRootDir cradle
-    cabal = isJust mCabalFile
-    cabalFile = fromMaybe "" mCabalFile
-    origGopts = ghcOpts opt
-    simpleCompilerOption = CompilerOptions origGopts [] []
-    fromCabalFile = do
-        pkgDesc <- parseCabalFile file
-        getCompilerOptions origGopts cradle pkgDesc
-      where
-        file = fromJust mCabalFile
 
 ----------------------------------------------------------------
 

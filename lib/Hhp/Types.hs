@@ -9,7 +9,7 @@ import GHC (Ghc)
 
 import Control.Exception (IOException)
 import Control.Applicative (Alternative(..))
-import Data.List (intercalate)
+import System.Exit
 
 -- | Output style.
 data OutputStyle = LispStyle  -- ^ S expression style.
@@ -21,7 +21,7 @@ newtype LineSeparator = LineSeparator String
 data Options = Options {
     outputStyle   :: OutputStyle
   , hlintOpts     :: [String]
-  , ghcOpts       :: [GHCOption]
+  , ghcOpts       :: [String]
   -- | If 'True', 'browse' also returns operators.
   , operators     :: Bool
   -- | If 'True', 'browse' also returns types.
@@ -144,64 +144,23 @@ data Cradle = Cradle {
     cradleCurrentDir :: FilePath
   -- | The project root directory.
   , cradleRootDir    :: FilePath
-  -- | The file name of the found cabal file.
-  , cradleCabalFile  :: Maybe FilePath
-  -- | The filepath to the executable used to get the options
-  , cradleOptsProg   :: Maybe FilePath
-  -- | Package database stack
-  , cradlePkgDbStack  :: [GhcPkgDb]
-  } deriving (Eq, Show)
+  -- | The action which needs to be executed to get the correct
+  -- command line arguments
+  , cradleOptsProg   :: CradleAction
+  } deriving (Show)
 
+data CradleAction = CradleAction {
+                      actionName :: String
+                      , getOptions ::  (FilePath -> IO (ExitCode, String, [String]))
+                      }
+
+instance Show CradleAction where
+  show (CradleAction name _) = "CradleAction: " ++ name
 ----------------------------------------------------------------
-
--- | GHC package database flags.
-data GhcPkgDb = GlobalDb | UserDb | PackageDb String deriving (Eq, Show)
-
--- | A single GHC command line option.
-type GHCOption  = String
-
--- | An include directory for modules.
-type IncludeDir = FilePath
-
--- | A package name.
-type PackageBaseName = String
-
--- | A package version.
-type PackageVersion  = String
-
--- | A package id.
-type PackageId  = String
-
--- | A package's name, verson and id.
-type Package    = (PackageBaseName, PackageVersion, PackageId)
-
-pkgName :: Package -> PackageBaseName
-pkgName (n,_,_) = n
-
-pkgVer :: Package -> PackageVersion
-pkgVer (_,v,_) = v
-
-pkgId :: Package -> PackageId
-pkgId (_,_,i) = i
-
-showPkg :: Package -> String
-showPkg (n,v,_) = intercalate "-" [n,v]
-
-showPkgId :: Package -> String
-showPkgId (n,v,"") = intercalate "-" [n,v]
-showPkgId (n,v,i)  = intercalate "-" [n,v,i]
-
--- | Haskell expression.
-type Expression = String
-
--- | Module name.
-type ModuleString = String
 
 -- | Option information for GHC
 data CompilerOptions = CompilerOptions {
-    ghcOptions  :: [GHCOption]  -- ^ Command line options
-  , includeDirs :: [IncludeDir] -- ^ Include directories for modules
-  , depPackages :: [Package]    -- ^ Dependent package names
+    ghcOptions  :: [String]  -- ^ Command line options
   } deriving (Eq, Show)
 
 instance Alternative Ghc where

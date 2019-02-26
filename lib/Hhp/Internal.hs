@@ -2,20 +2,7 @@
 
 module Hhp.Internal (
   -- * Types
-    GHCOption
-  , Package
-  , PackageBaseName
-  , PackageVersion
-  , PackageId
-  , IncludeDir
-  , CompilerOptions(..)
-  -- * Cabal API
-  , parseCabalFile
-  , getCompilerOptions
-  , cabalAllBuildInfo
-  , cabalDependPackages
-  , cabalSourceDirs
-  , cabalAllTargets
+  CompilerOptions(..)
   -- * IO
   , getDynamicFlags
   -- * Targets
@@ -26,7 +13,6 @@ module Hhp.Internal (
   , setAllWaringFlags
   ) where
 
-import Hhp.CabalApi
 import Hhp.GHCApi
 import Hhp.Logger
 import Hhp.Types

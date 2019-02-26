@@ -4,29 +4,18 @@ import CoreMonad (liftIO)
 import CoreUtils (exprType)
 import Desugar (deSugarExpr)
 import DynFlags (gopt_set, wopt_set, WarningFlag(Opt_WarnTypedHoles))
-import Exception (ghandle, SomeException(..))
-import GHC (Ghc, TypecheckedModule(..), DynFlags, SrcSpan, Type, GenLocated(L))
+import GHC
 import qualified GHC as G
-import HsBinds (HsBindLR(..))
 import HscTypes (ModSummary)
 import Outputable (PprStyle)
-import PprTyThing
-import TcHsSyn (hsPatType)
 import TcType (mkFunTys)
 
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)
-import Data.Function (on)
-import Data.List (sortBy)
-import Data.Maybe (catMaybes, fromMaybe)
-import Data.Ord as O
 
-import Hhp.Doc (showPage, showOneLine, getStyle)
+import Hhp.Doc (getStyle)
 import Hhp.GHCApi
 import Hhp.Gap
-import Hhp.Logger (getSrcSpan)
-import Hhp.Syb
-import Hhp.Things
 import Hhp.Types
 
 -- | Obtaining type of a target expression. (GHCi's type:)
@@ -38,7 +27,7 @@ loadFile cradle opt file = withGHC' $ do
   initializeFlagsWithCradle opt cradle
   body
   where
-    body = inModuleContext file $ \dflag style -> do
+    body = inModuleContext file $ \_dflag _style -> do
         modSum <- fileModSummary file
         p <- G.parseModule modSum
         tcm@TypecheckedModule{tm_typechecked_source = tcs} <- G.typecheckModule p
