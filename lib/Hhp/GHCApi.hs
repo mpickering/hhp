@@ -3,6 +3,7 @@
 module Hhp.GHCApi (
     withGHC
   , withGHC'
+  , withGhcT
   , initializeFlagsWithCradle
   , setTargetFiles
   , getDynamicFlags
@@ -14,10 +15,12 @@ module Hhp.GHCApi (
   ) where
 
 import CoreMonad (liftIO)
-import Exception (ghandle, SomeException(..))
-import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..))
+import Exception (ghandle, SomeException(..), ExceptionMonad(..))
+import GHC (Ghc, DynFlags(..), GhcLink(..), HscTarget(..), LoadHowMuch(..), GhcMonad, GhcT)
 import qualified GHC as G
 import qualified Outputable as G
+import qualified MonadUtils as G
+import DynFlags
 
 import Control.Monad (forM, void)
 import System.Exit (exitSuccess)
@@ -28,6 +31,7 @@ import System.Directory
 
 import qualified Hhp.Gap as Gap
 import Hhp.Types
+import Debug.Trace
 
 ----------------------------------------------------------------
 
@@ -58,6 +62,11 @@ withGHC' body = do
     mlibdir <- getSystemLibDir
     G.runGhc mlibdir body
 
+withGhcT :: (Exception.ExceptionMonad m, G.MonadIO m, Monad m) => GhcT m a -> m a
+withGhcT body = do
+  mlibdir <- G.liftIO $ getSystemLibDir
+  G.runGhcT mlibdir body
+
 ----------------------------------------------------------------
 
 data Build = CabalPkg | SingleFile deriving Eq
@@ -66,33 +75,45 @@ data Build = CabalPkg | SingleFile deriving Eq
 -- file or GHC session according to the 'Cradle' and 'Options'
 -- provided.
 initializeFlagsWithCradle ::
-           Options
-        -> Cradle
-        -> Ghc ()
-initializeFlagsWithCradle opt cradle = do
+        (GhcMonad m)
+        => Cradle
+        -> m ()
+initializeFlagsWithCradle cradle = do
       liftIO $ print "withOptsFile"
       dir <- liftIO $ getCurrentDirectory
-      (ex, ghcOpts, err) <- liftIO $ getOptions (cradleOptsProg cradle) (cradleRootDir cradle)
+      (ex, err, ghcOpts) <- liftIO $ getOptions (cradleOptsProg cradle) (cradleRootDir cradle)
       G.pprTraceM "res" (G.text (show (ex, err, ghcOpts, dir)))
-      let compOpts = CompilerOptions (words ghcOpts)
+      let compOpts = CompilerOptions ghcOpts
       liftIO $ print ghcOpts
-      initSession SingleFile opt compOpts
+      initSession SingleFile compOpts
 
 
 ----------------------------------------------------------------
 
-initSession :: Build
-            -> Options
+initSession :: (GhcMonad m)
+            => Build
             -> CompilerOptions
-            -> Ghc ()
-initSession _build Options {..} CompilerOptions {..} = do
+            -> m ()
+initSession _build CompilerOptions {..} = do
     df <- G.getSessionDynFlags
-    void $ G.setSessionDynFlags =<< (addCmdOpts ghcOptions
-      $ setLinkerOptions
-      $ setEmptyLogger df)
+    traceShowM (length ghcOptions)
+
+    df' <- addCmdOpts ghcOptions df
+    void $ G.setSessionDynFlags
+      (disableOptimisation
+      $ setIgnoreInterfacePragmas
+      $ setLinkerOptions df'
+      -- $ setVerbosity 5 dfd
+      )
+--      $ setEmptyLogger df)
+--
+--
+setVerbosity n df = df { verbosity = n }
 
 setEmptyLogger :: DynFlags -> DynFlags
 setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ _ -> return () }
+
+type IncludeDir = String
 
 ----------------------------------------------------------------
 
@@ -103,11 +124,18 @@ setLinkerOptions :: DynFlags -> DynFlags
 setLinkerOptions df = df {
     ghcLink   = LinkInMemory
   , hscTarget = HscNothing
+  , ghcMode = CompManager
   }
 
-addCmdOpts :: [String] -> DynFlags -> Ghc DynFlags
+setIgnoreInterfacePragmas df =
+ gopt_set df Opt_IgnoreInterfacePragmas
+
+
+addCmdOpts :: (GhcMonad m)
+           => [String] -> DynFlags -> m DynFlags
 addCmdOpts cmdOpts df1 = do
-    (df2, _leftovers, _warns) <- G.parseDynamicFlags df1 (map G.noLoc cmdOpts)
+    (df2, leftovers, warns) <- G.parseDynamicFlags df1 (map G.noLoc cmdOpts)
+    traceShowM (map G.unLoc leftovers, length warns)
     -- TODO: Need to handle these as well
     -- Ideally it requires refactoring to work in GHCi monad rather than
     -- Ghc monad and then can just use newDynFlags.
@@ -125,9 +153,10 @@ addCmdOpts cmdOpts df1 = do
 ----------------------------------------------------------------
 
 -- | Set the files as targets and load them.
-setTargetFiles :: [FilePath] -> Ghc ()
+setTargetFiles :: GhcMonad m => [FilePath] -> m ()
 setTargetFiles files = do
     targets <- forM files $ \file -> G.guessTarget file Nothing
+    G.pprTraceM "setTargets" (G.ppr (files, targets))
     G.setTargets (map (\t -> t { G.targetAllowObjCode = False }) targets)
     void $ G.load LoadAllTargets
 
@@ -139,7 +168,9 @@ getDynamicFlags = do
     mlibdir <- getSystemLibDir
     G.runGhc mlibdir G.getSessionDynFlags
 
-withDynFlags :: (DynFlags -> DynFlags) -> Ghc a -> Ghc a
+withDynFlags ::
+  (GhcMonad m)
+  => (DynFlags -> DynFlags) -> m a -> m a
 withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
   where
     setup = do
@@ -148,7 +179,9 @@ withDynFlags setFlag body = G.gbracket setup teardown (\_ -> body)
         return dflag
     teardown = void . G.setSessionDynFlags
 
-withCmdFlags :: [String] -> Ghc a -> Ghc a
+withCmdFlags ::
+  (GhcMonad m)
+  => [String] -> m a ->  m a
 withCmdFlags flags body = G.gbracket setup teardown (\_ -> body)
   where
     setup = do
@@ -167,11 +200,14 @@ setNoWaringFlags df = df { warningFlags = Gap.emptyWarnFlags}
 setAllWaringFlags :: DynFlags -> DynFlags
 setAllWaringFlags df = df { warningFlags = allWarningFlags }
 
+disableOptimisation :: DynFlags -> DynFlags
+disableOptimisation df = updOptLevel 0 df
+
 {-# NOINLINE allWarningFlags #-}
 allWarningFlags :: Gap.WarnFlags
 allWarningFlags = unsafePerformIO $ do
     mlibdir <- getSystemLibDir
-    G.runGhc mlibdir $ do
+    G.runGhcT mlibdir $ do
         df <- G.getSessionDynFlags
         df' <- addCmdOpts ["-Wall"] df
         return $ G.warningFlags df'

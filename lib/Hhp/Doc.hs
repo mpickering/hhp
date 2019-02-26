@@ -1,6 +1,6 @@
 module Hhp.Doc where
 
-import GHC (Ghc, DynFlags, getPrintUnqual, pprCols)
+import GHC (Ghc, DynFlags, getPrintUnqual, pprCols, GhcMonad, GhcT)
 import Outputable (PprStyle, SDoc, withPprStyleDoc, neverQualify)
 import Pretty (Mode(..), Doc, Style(..), renderStyle, style)
 
@@ -12,7 +12,7 @@ showPage dflag stl = showDocWith dflag PageMode . withPprStyleDoc dflag stl
 showOneLine :: DynFlags -> PprStyle -> SDoc -> String
 showOneLine dflag stl = showDocWith dflag OneLineMode . withPprStyleDoc dflag stl
 
-getStyle :: DynFlags -> Ghc PprStyle
+getStyle :: (GhcMonad m) => DynFlags -> m PprStyle
 getStyle dflags = makeUserStyle dflags <$> getPrintUnqual
 
 styleUnqualified :: DynFlags -> PprStyle

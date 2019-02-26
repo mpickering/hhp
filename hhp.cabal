@@ -30,6 +30,7 @@ Library
                         Hhp.Lang
                         Hhp.Types
                         Hhp.Things
+                        Hhp.HIE
   Build-Depends:        base >= 4.9 && < 5
                       , Cabal >= 1.24
                       , containers

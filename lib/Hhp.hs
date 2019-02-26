@@ -17,6 +17,8 @@ module Hhp (
   , listFlags
   , debugInfo
   , rootInfo
+  , withGhcT
+  , module Hhp.GHCApi
   , module Hhp.HIE
   ) where
 
@@ -27,3 +29,4 @@ import Hhp.Flag
 import Hhp.Lang
 import Hhp.Types
 import Hhp.HIE
+import Hhp.GHCApi

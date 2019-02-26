@@ -6,7 +6,7 @@ module Hhp.Check (
   ) where
 
 import DynFlags (dopt_set, DumpFlag(Opt_D_dump_splices))
-import GHC (Ghc, DynFlags(..))
+import GHC (Ghc, DynFlags(..), GhcMonad)
 
 import Hhp.GHCApi
 import Hhp.Logger
@@ -22,9 +22,9 @@ checkSyntax :: Options
             -> [FilePath]  -- ^ The target files.
             -> IO String
 checkSyntax _   _      []    = return ""
-checkSyntax opt cradle files = withGHC sessionName $ do
+checkSyntax opt cradle files = withGhcT $ do
     pprTraceM "cradble" (text $ show cradle)
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle cradle
     either id id <$> check opt files
   where
     sessionName = case files of
@@ -35,9 +35,10 @@ checkSyntax opt cradle files = withGHC sessionName $ do
 
 -- | Checking syntax of a target file using GHC.
 --   Warnings and errors are returned.
-check :: Options
+check :: (GhcMonad m)
+      => Options
       -> [FilePath]  -- ^ The target files.
-      -> Ghc (Either String String)
+      -> m (Either String String)
 check opt fileNames = withLogger opt setAllWaringFlags $
     setTargetFiles fileNames
 
@@ -50,7 +51,7 @@ expandTemplate :: Options
                -> IO String
 expandTemplate _   _      []    = return ""
 expandTemplate opt cradle files = withGHC sessionName $ do
-    initializeFlagsWithCradle opt cradle
+    initializeFlagsWithCradle cradle
     either id id <$> expand opt files
   where
     sessionName = case files of

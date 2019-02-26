@@ -10,10 +10,11 @@ import Bag (Bag, bagToList)
 import CoreMonad (liftIO)
 import DynFlags (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
 import ErrUtils
-import Exception (ghandle)
+import Exception (ghandle, ExceptionMonad)
 import FastString (unpackFS)
-import GHC (Ghc, DynFlags(..), SrcSpan(..), Severity(SevError))
+import GHC (Ghc, DynFlags(..), SrcSpan(..), Severity(SevError), GhcMonad)
 import qualified GHC as G
+import qualified MonadUtils as G
 import HscTypes (SourceError, srcErrorMessages)
 import Outputable (PprStyle, SDoc)
 
@@ -51,7 +52,9 @@ appendLogRef df (LogRef ref) _ _ sev src style msg = do
 -- | Set the session flag (e.g. "-Wall" or "-w:") then
 --   executes a body. Log messages are returned as 'String'.
 --   Right is success and Left is failure.
-withLogger :: Options -> (DynFlags -> DynFlags) -> Ghc () -> Ghc (Either String String)
+withLogger ::
+  (GhcMonad m)
+  => Options -> (DynFlags -> DynFlags) -> m () -> m (Either String String)
 withLogger opt setDF body = ghandle (sourceError opt) $ do
     logref <- liftIO newLogRef
     withDynFlags (setLogger logref . setDF) $ do
@@ -65,7 +68,9 @@ withLogger opt setDF body = ghandle (sourceError opt) $ do
 ----------------------------------------------------------------
 
 -- | Converting 'SourceError' to 'String'.
-sourceError :: Options -> SourceError -> Ghc (Either String String)
+sourceError ::
+  (GhcMonad m)
+  => Options -> SourceError -> m (Either String String)
 sourceError opt err = do
     dflag <- G.getSessionDynFlags
     style <- getStyle dflag
