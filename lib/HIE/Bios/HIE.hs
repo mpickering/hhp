@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Hhp.HIE where
+module HIE.Bios.HIE where
 
 import CoreMonad (liftIO)
 import CoreUtils (exprType)
@@ -15,10 +15,10 @@ import TcType (mkFunTys)
 import Control.Applicative ((<|>))
 import Control.Monad (filterM)
 
-import Hhp.Doc (getStyle)
-import Hhp.GHCApi
-import Hhp.Gap
-import Hhp.Types
+import HIE.Bios.Doc (getStyle)
+import HIE.Bios.GHCApi
+import HIE.Bios.Gap
+import HIE.Bios.Types
 import Debug.Trace
 import System.Directory
 import EnumSet

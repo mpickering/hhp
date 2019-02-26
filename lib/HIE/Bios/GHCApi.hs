@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, RecordWildCards #-}
 
-module Hhp.GHCApi (
+module HIE.Bios.GHCApi (
     withGHC
   , withGHC'
   , withGhcT
@@ -29,8 +29,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Process (readProcess)
 import System.Directory
 
-import qualified Hhp.Gap as Gap
-import Hhp.Types
+import qualified HIE.Bios.Gap as Gap
+import HIE.Bios.Types
 import Debug.Trace
 
 ----------------------------------------------------------------

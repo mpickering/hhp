@@ -1,7 +1,7 @@
-module Hhp.Flag where
+module HIE.Bios.Flag where
 
 import DynFlags
-import Hhp.Types
+import HIE.Bios.Types
 
 -- | Listing GHC flags. (e.g -Wno-orphans)
 

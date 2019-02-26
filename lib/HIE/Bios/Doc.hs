@@ -1,10 +1,10 @@
-module Hhp.Doc where
+module HIE.Bios.Doc where
 
 import GHC (Ghc, DynFlags, getPrintUnqual, pprCols, GhcMonad, GhcT)
 import Outputable (PprStyle, SDoc, withPprStyleDoc, neverQualify)
 import Pretty (Mode(..), Doc, Style(..), renderStyle, style)
 
-import Hhp.Gap (makeUserStyle)
+import HIE.Bios.Gap (makeUserStyle)
 
 showPage :: DynFlags -> PprStyle -> SDoc -> String
 showPage dflag stl = showDocWith dflag PageMode . withPprStyleDoc dflag stl

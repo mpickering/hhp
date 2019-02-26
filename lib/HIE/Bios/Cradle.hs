@@ -1,10 +1,10 @@
-module Hhp.Cradle (
+module HIE.Bios.Cradle (
     findCradle
   ) where
 
 import System.Process
 import System.Exit
-import Hhp.Types
+import HIE.Bios.Types
 
 ----------------------------------------------------------------
 

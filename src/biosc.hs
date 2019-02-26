@@ -13,13 +13,17 @@ import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.IO (hPutStr, hPutStrLn, stdout, stderr, hSetEncoding, utf8)
 
-import Hhp
+import HIE.Bios
+import HIE.Bios.Lang
+import HIE.Bios.Flag
+import HIE.Bios.Check
+import HIE.Bios.Debug
 import Paths_hie_bios
 
 ----------------------------------------------------------------
 
 progVersion :: String
-progVersion = "hhpc version " ++ showVersion version ++ " compiled by GHC " ++ cProjectVersion ++ "\n"
+progVersion = "biosc version " ++ showVersion version ++ " compiled by GHC " ++ cProjectVersion ++ "\n"
 
 ghcOptHelp :: String
 ghcOptHelp = " [-g GHC_opt1 -g GHC_opt2 ...] "
@@ -27,9 +31,9 @@ ghcOptHelp = " [-g GHC_opt1 -g GHC_opt2 ...] "
 usage :: String
 usage =    progVersion
         ++ "Usage:\n"
-        ++ "\t hhpc check" ++ ghcOptHelp ++ "<HaskellFiles...>\n"
-        ++ "\t hhpc version\n"
-        ++ "\t hhpc help\n"
+        ++ "\t biosc check" ++ ghcOptHelp ++ "<HaskellFiles...>\n"
+        ++ "\t biosc version\n"
+        ++ "\t biosc help\n"
 
 ----------------------------------------------------------------
 

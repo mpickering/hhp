@@ -1,4 +1,4 @@
-module Hhp.Things (
+module HIE.Bios.Things (
     GapThing(..)
   , fromTyThing
   , infoThing
@@ -18,7 +18,7 @@ import Var (varType)
 import Data.List (intersperse)
 import Data.Maybe (catMaybes)
 
-import Hhp.Gap (getTyThing, fixInfo)
+import HIE.Bios.Gap (getTyThing, fixInfo)
 
 -- from ghc/InteractiveUI.hs
 

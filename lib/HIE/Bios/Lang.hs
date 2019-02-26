@@ -1,8 +1,8 @@
-module Hhp.Lang where
+module HIE.Bios.Lang where
 
 import DynFlags (supportedLanguagesAndExtensions)
 
-import Hhp.Types
+import HIE.Bios.Types
 
 -- | Listing language extensions.
 

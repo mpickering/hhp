@@ -1,11 +1,11 @@
-module Hhp.Debug (debugInfo, rootInfo) where
+module HIE.Bios.Debug (debugInfo, rootInfo) where
 
 import CoreMonad (liftIO)
 
 import Data.Maybe (fromMaybe)
 
-import Hhp.GHCApi
-import Hhp.Types
+import HIE.Bios.GHCApi
+import HIE.Bios.Types
 
 ----------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Hhp.Types where
+module HIE.Bios.Types where
 
 import qualified Exception as GE
 import GHC (Ghc)

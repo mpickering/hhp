@@ -1,7 +1,7 @@
 -- | The Happy Haskell Programming library.
 --   API for interactive processes
 
-module Hhp.Ghc (
+module HIE.Bios.Ghc (
   -- * Converting the Ghc monad to the IO monad
     withGHC
   , withGHC'
@@ -12,5 +12,5 @@ module Hhp.Ghc (
   , getSystemLibDir
   ) where
 
-import Hhp.Check
-import Hhp.GHCApi
+import HIE.Bios.Check
+import HIE.Bios.GHCApi

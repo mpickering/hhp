@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, CPP #-}
 
-module Hhp.Gap (
+module HIE.Bios.Gap (
     WarnFlags
   , emptyWarnFlags
   , makeUserStyle

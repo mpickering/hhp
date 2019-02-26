@@ -1,4 +1,4 @@
-module Hhp.Check (
+module HIE.Bios.Check (
     checkSyntax
   , check
   , expandTemplate
@@ -8,9 +8,9 @@ module Hhp.Check (
 import DynFlags (dopt_set, DumpFlag(Opt_D_dump_splices))
 import GHC (Ghc, DynFlags(..), GhcMonad)
 
-import Hhp.GHCApi
-import Hhp.Logger
-import Hhp.Types
+import HIE.Bios.GHCApi
+import HIE.Bios.Logger
+import HIE.Bios.Types
 import Outputable
 
 ----------------------------------------------------------------
