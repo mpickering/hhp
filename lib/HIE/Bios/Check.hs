@@ -27,9 +27,11 @@ checkSyntax opt cradle files = withGhcT $ do
     initializeFlagsWithCradle cradle
     either id id <$> check opt files
   where
+    {-
     sessionName = case files of
       [file] -> file
       _      -> "MultipleFiles"
+      -}
 
 ----------------------------------------------------------------
 

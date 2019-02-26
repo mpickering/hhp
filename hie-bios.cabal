@@ -29,7 +29,7 @@ Library
                         HIE.Bios.Lang
                         HIE.Bios.Types
                         HIE.Bios.Things
-                        HIE.Bios.HIE
+                        HIE.Bios.Load
   Build-Depends:        base >= 4.9 && < 5
                       , Cabal >= 1.24
                       , containers

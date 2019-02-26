@@ -1,34 +1,27 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module HIE.Bios.HIE where
+module HIE.Bios.Load ( loadFile ) where
 
 import CoreMonad (liftIO)
-import CoreUtils (exprType)
-import Desugar (deSugarExpr)
 import DynFlags (gopt_set, wopt_set, WarningFlag(Opt_WarnTypedHoles))
 import GHC
 import qualified GHC as G
 import qualified Exception as GE
 import HscTypes (ModSummary)
 import Outputable
-import TcType (mkFunTys)
-
-import Control.Applicative ((<|>))
-import Control.Monad (filterM)
 
 import HIE.Bios.Doc (getStyle)
 import HIE.Bios.GHCApi
 import HIE.Bios.Gap
 import HIE.Bios.Types
-import Debug.Trace
 import System.Directory
 import EnumSet
+import Control.Monad (filterM)
 
 -- | Obtaining type of a target expression. (GHCi's type:)
 loadFile :: Cradle
-      -> Options
-      -> FilePath     -- ^ A target file.
-      -> IO (G.ParsedModule, TypecheckedModule)
-loadFile cradle opt file = withGhcT $ do
+         -> FilePath     -- ^ A target file.
+         -> IO (G.ParsedModule, TypecheckedModule)
+loadFile cradle file = withGhcT $ do
   pprTraceM "loadFile:1" (ppr (show cradle, file))
   initializeFlagsWithCradle cradle
   dir <- liftIO $ getCurrentDirectory
@@ -38,12 +31,10 @@ loadFile cradle opt file = withGhcT $ do
   where
     body = inModuleContext file $ \dflag _style -> do
         modSum <- fileModSummary file
-        GHC.setSessionDynFlags dflag
-        df <- getSessionDynFlags
-        pprTraceM "loadFile:3" (ppr $ optLevel df)
-        pprTraceM "loadFile:4" (ppr $ show (EnumSet.toList (generalFlags df)))
+        pprTraceM "loadFile:3" (ppr $ optLevel dflag)
+        pprTraceM "loadFile:4" (ppr $ show (EnumSet.toList (generalFlags dflag)))
         p <- G.parseModule modSum
-        tcm@TypecheckedModule{tm_typechecked_source = tcs} <- G.typecheckModule p
+        tcm <- G.typecheckModule p
         return $ (p, tcm)
 
 fileModSummary :: GhcMonad m => FilePath -> m ModSummary

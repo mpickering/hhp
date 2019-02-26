@@ -1,22 +1,16 @@
 -- | The HIE Bios
 
 module HIE.Bios (
-  -- * Cradle
+  -- * Initialise a session
     Cradle(..)
   , findCradle
-  -- * Options
-  , defaultOptions
-  -- * 'IO' utilities
+  -- * Add a file to the session
+  , loadFile
+  -- * Eliminate a session to IO
   , withGhcT
-  , module HIE.Bios.GHCApi
-  , module HIE.Bios.HIE
   ) where
 
-import HIE.Bios.Check
 import HIE.Bios.Cradle
-import HIE.Bios.Debug
-import HIE.Bios.Flag
-import HIE.Bios.Lang
 import HIE.Bios.Types
-import HIE.Bios.HIE
 import HIE.Bios.GHCApi
+import HIE.Bios.Load

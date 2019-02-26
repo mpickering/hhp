@@ -103,17 +103,7 @@ initSession _build CompilerOptions {..} = do
       (disableOptimisation
       $ setIgnoreInterfacePragmas
       $ setLinkerOptions df'
-      -- $ setVerbosity 5 dfd
       )
---      $ setEmptyLogger df)
---
---
-setVerbosity n df = df { verbosity = n }
-
-setEmptyLogger :: DynFlags -> DynFlags
-setEmptyLogger df = df { G.log_action =  \_ _ _ _ _ _ -> return () }
-
-type IncludeDir = String
 
 ----------------------------------------------------------------
 
@@ -127,6 +117,7 @@ setLinkerOptions df = df {
   , ghcMode = CompManager
   }
 
+setIgnoreInterfacePragmas :: DynFlags -> DynFlags
 setIgnoreInterfacePragmas df =
  gopt_set df Opt_IgnoreInterfacePragmas
 

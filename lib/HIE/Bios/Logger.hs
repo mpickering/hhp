@@ -10,11 +10,10 @@ import Bag (Bag, bagToList)
 import CoreMonad (liftIO)
 import DynFlags (LogAction, dopt, DumpFlag(Opt_D_dump_splices))
 import ErrUtils
-import Exception (ghandle, ExceptionMonad)
+import Exception (ghandle)
 import FastString (unpackFS)
-import GHC (Ghc, DynFlags(..), SrcSpan(..), Severity(SevError), GhcMonad)
+import GHC (DynFlags(..), SrcSpan(..), Severity(SevError), GhcMonad)
 import qualified GHC as G
-import qualified MonadUtils as G
 import HscTypes (SourceError, srcErrorMessages)
 import Outputable (PprStyle, SDoc)
 

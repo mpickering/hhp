@@ -14,6 +14,7 @@ import System.Exit (exitFailure)
 import System.IO (hPutStr, hPutStrLn, stdout, stderr, hSetEncoding, utf8)
 
 import HIE.Bios
+import HIE.Bios.Types
 import HIE.Bios.Lang
 import HIE.Bios.Flag
 import HIE.Bios.Check

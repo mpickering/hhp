@@ -1,6 +1,6 @@
 module HIE.Bios.Doc where
 
-import GHC (Ghc, DynFlags, getPrintUnqual, pprCols, GhcMonad, GhcT)
+import GHC (DynFlags, getPrintUnqual, pprCols, GhcMonad)
 import Outputable (PprStyle, SDoc, withPprStyleDoc, neverQualify)
 import Pretty (Mode(..), Doc, Style(..), renderStyle, style)
 
