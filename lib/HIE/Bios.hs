@@ -4,6 +4,7 @@ module HIE.Bios (
   -- * Initialise a session
     Cradle(..)
   , findCradle
+  , initializeFlagsWithCradle
   -- * Add a file to the session
   , loadFile
   -- * Eliminate a session to IO
